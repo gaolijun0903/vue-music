@@ -25,7 +25,7 @@ export default{
 			return this.singer.name
 		},
 		bgImage(){
-			return this.singer.bgImage
+			return this.singer.avatar
 		},
 		...mapGetters([
 			'singer'
@@ -44,6 +44,7 @@ export default{
 				if(res.code === ERR_OK){
 					this.songs = this._normalizeSongs(res.data.list);
 					console.log(this.songs)
+					console.log(this.singer)
 				}
 			})
 		},

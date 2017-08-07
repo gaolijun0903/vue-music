@@ -4,13 +4,14 @@
 		<i class="icon-back"></i>
 	</div>
 	<h1 class="title" v-html="title"></h1>
-	<div class="bg-image" ref="bgImage">
+	<div class="bg-image" ref="bgImage" :style="bgStyle">
 		<div class="filter"></div>
 	</div>
-	<scroll class="list" :data="songs">
-		<ul>
-			<li></li>
-		</ul>
+	<div class="bg-layer" ref="bgLayer"></div>
+	<scroll class="list" ref="list" :data="songs" @scroll="scroll" :probe-type="probeType" :listen-scroll="listenScroll">
+		<div class="song-list-wrapper">
+			<song-list :songs="songs"></song-list>
+		</div>
 	</scroll>
 </div>
 
@@ -18,6 +19,9 @@
 
 <script>
 import Scroll from 'base/scroll/scroll'
+import songList from 'base/song-list/song-list'
+const TITLE_HEIGHT = 30
+
 export default {
 	props:{
 		songs:{
@@ -33,8 +37,51 @@ export default {
 			default:''
 		}
 	},
+	data(){
+		return {
+			
+			scrollY:0
+		}
+	},
+	computed:{
+		bgStyle(){
+			return `background-image:url(${this.bgImage})`
+		}
+	},
+	created(){
+		this.probeType = 3;
+		this.listenScroll = true;
+	},
+	mounted(){
+		this.imageHeight = this.$refs.bgImage.clientHeight;
+		this.minTranslateY = -(this.imageHeight-TITLE_HEIGHT);
+		this.$refs.list.$el.style.top = `${this.imageHeight}px`;
+	},
+	methods:{
+		scroll(pos){
+			this.scrollY = pos.y
+		}
+	},
+	watch:{
+		scrollY(newY){
+			let zindex = 0;
+			let translateY = Math.max(newY,this.minTranslateY);
+			this.$refs.bgLayer.style['transform'] = `translate3d(0,${translateY}px,0)`
+			this.$refs.bgLayer.style['webkit-transform'] = `translate3d(0,${translateY}px,0)`
+			if(newY <= this.minTranslateY){
+				this.$refs.bgImage.style.paddingTop = 0;
+				this.$refs.bgImage.style.height = `${TITLE_HEIGHT}px`;
+				zindex = 10
+			}else {
+				this.$refs.bgImage.style.paddingTop = '70%';
+				this.$refs.bgImage.style.height = 0;
+			}
+			this.$refs.bgImage.style.zIndex = zindex;
+		}
+	},
 	components:{
-		Scroll
+		Scroll,
+		songList
 	}
 }
 </script>
@@ -65,6 +112,7 @@ export default {
 	position: absolute;
 	top: 0;
 	left: 10%;
+	z-index: 40;
 	width: 80%;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -78,7 +126,7 @@ export default {
 	position: relative;
 	width: 100%;
 	height: 0;
-	padding: 70%;
+	padding-top: 70%;
 	transform-origin: top;
 	background-size: cover;
 }
@@ -89,6 +137,11 @@ export default {
 	width: 100;
 	height: 100%;
 	background: rgba(7, 17, 27, 0.4);
+}
+.music-list .bg-layer{
+	position: relative;
+	height: 100%;
+	background: #222;
 }
 .music-list .list{
 	position: fixed;

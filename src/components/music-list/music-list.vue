@@ -1,16 +1,25 @@
 <template>
 <div class="music-list">
-	<div class="back">
+	<div class="back" @click="back">
 		<i class="icon-back"></i>
 	</div>
 	<h1 class="title" v-html="title"></h1>
 	<div class="bg-image" ref="bgImage" :style="bgStyle">
-		<div class="filter"></div>
+		<div class="play-wrapper">
+			<div class="play" v-show="songs.length>0" ref="playBtn"  @click="random">
+				<i class="icon-play"></i>
+				<span class="text">随机播放全部</span>
+			</div>
+		</div>
+		<div class="filter" ref="filter"></div>
 	</div>
 	<div class="bg-layer" ref="bgLayer"></div>
 	<scroll class="list" ref="list" :data="songs" @scroll="scroll" :probe-type="probeType" :listen-scroll="listenScroll">
 		<div class="song-list-wrapper">
-			<song-list :songs="songs"></song-list>
+			<song-list :songs="songs" @select="selectSong"></song-list>
+		</div>
+		<div class="loading-wrapper" v-show="!songs.length">
+			<loading></loading>
 		</div>
 	</scroll>
 </div>
@@ -20,7 +29,13 @@
 <script>
 import Scroll from 'base/scroll/scroll'
 import songList from 'base/song-list/song-list'
+import Loading from 'base/loading/loading'
+import {prefixStyle} from 'common/js/dom'
+import {mapActions} from 'vuex'
+
 const TITLE_HEIGHT = 30
+const transform = prefixStyle('transform')
+const backdrop = prefixStyle('backdrop-filter')
 
 export default {
 	props:{
@@ -39,13 +54,12 @@ export default {
 	},
 	data(){
 		return {
-			
 			scrollY:0
 		}
 	},
 	computed:{
 		bgStyle(){
-			return `background-image:url(${this.bgImage})`
+			return `background-image:url(${this.bgImage})`;
 		}
 	},
 	created(){
@@ -55,33 +69,66 @@ export default {
 	mounted(){
 		this.imageHeight = this.$refs.bgImage.clientHeight;
 		this.minTranslateY = -(this.imageHeight-TITLE_HEIGHT);
-		this.$refs.list.$el.style.top = `${this.imageHeight}px`;
+		this.$refs.list.$el.style.top = `${this.imageHeight}px`; //因为list是scroll组件，所以要用$el获取元素
 	},
 	methods:{
 		scroll(pos){
-			this.scrollY = pos.y
-		}
+			this.scrollY = pos.y;
+		},
+		back(){
+			this.$router.back();
+		},
+		selectSong(song,index){
+			this.selectPlay({
+				list:this.songs,
+				index:index
+			})
+		},
+		random(){
+			this.randomPlay({
+				list:this.songs
+			})
+		},
+		...mapActions([
+			'selectPlay',
+			'randomPlay'
+		])
 	},
 	watch:{
 		scrollY(newY){
 			let zindex = 0;
+			let scale = 1;
+			let blur = 0;
 			let translateY = Math.max(newY,this.minTranslateY);
-			this.$refs.bgLayer.style['transform'] = `translate3d(0,${translateY}px,0)`
-			this.$refs.bgLayer.style['webkit-transform'] = `translate3d(0,${translateY}px,0)`
+			this.$refs.bgLayer.style[transform] = `translate3d(0,${translateY}px,0)`;
+			
+			const percent = Math.abs(newY/this.imageHeight);
+			if(newY>0){
+				scale = 1 + percent;
+				zindex = 10;
+			}else{
+				blur = Math.min(20*percent, 20);
+			}
+			this.$refs.filter.style[backdrop] = `blur(${blur}px)`;
+			
 			if(newY <= this.minTranslateY){
 				this.$refs.bgImage.style.paddingTop = 0;
 				this.$refs.bgImage.style.height = `${TITLE_HEIGHT}px`;
+				this.$refs.playBtn.style.display = 'none';
 				zindex = 10
 			}else {
 				this.$refs.bgImage.style.paddingTop = '70%';
 				this.$refs.bgImage.style.height = 0;
+				this.$refs.playBtn.style.display = '';
 			}
 			this.$refs.bgImage.style.zIndex = zindex;
+			this.$refs.bgImage.style[transform] = `scale(${scale})`;
 		}
 	},
 	components:{
 		Scroll,
-		songList
+		songList,
+		Loading
 	}
 }
 </script>
@@ -130,6 +177,33 @@ export default {
 	transform-origin: top;
 	background-size: cover;
 }
+.music-list .bg-image .play-wrapper{
+	position: absolute;
+	bottom: 20px;
+	z-index: 50;
+	width: 100%;
+}
+.music-list .bg-image .play-wrapper .play{
+	width: 135px;
+	padding: 7px 0;
+	margin:0 auto;
+	border-radius: 100px;
+	font-size:0;
+	text-align: center;
+	color: #ffcd32;
+	border: 1px solid #ffcd32;
+}
+.music-list .bg-image .play-wrapper .play .icon-play{
+	display: inline-block;
+	vertical-align: middle;
+	margin-right: 6px;
+	font-size: 16px;	
+}
+.music-list .bg-image .play-wrapper .play .text{
+	display:inline-block;
+	vertical-align: middle;
+	font-size: 12px;
+}
 .music-list .bg-image .filter{
 	position: absolute;
 	top: 0;
@@ -150,7 +224,15 @@ export default {
 	width: 100%;
 	background:#222;
 }
-
+.music-list .list .song-list-wrapper{
+	padding: 20px 30px;
+}
+.music-list .list .loading-wrapper{
+	position: absolute;
+	top: 50%;
+	width:100%;
+	transform:translateY(-50%);
+}
 
 
 

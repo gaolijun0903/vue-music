@@ -4,8 +4,14 @@ import {shuffle} from 'common/js/util'
 
 export const selectPlay = function({commit,state},{list,index}){
 	commit(types.SET_SEQUENCELIST,list)
-	//这里有问题，视频7-18
-	commit(types.SET_PLAYLIST,list)
+	if(state.mode === playMode.random){
+		let randomList = shuffle(list)
+		commit(types.SET_PLAYLIST,randomList)
+		index = findIndex(randomList,list[index])
+	}else{
+		commit(types.SET_PLAYLIST,list)
+	}
+	
 	commit(types.SET_CURRENTINDEX,index)
 	commit(types.SET_FULLSCREEN,true)
 	commit(types.SET_PLAYING_STATE,true)
@@ -19,4 +25,10 @@ export const randomPlay = function({commit},{list}){
 	commit(types.SET_CURRENTINDEX,0)
 	commit(types.SET_FULLSCREEN,true)
 	commit(types.SET_PLAYING_STATE,true)
+}
+
+function findIndex(list,song){
+	return list.findIndex((item)=>{
+		return item.id === song.id
+	})
 }

@@ -16,22 +16,34 @@
 				<h1 class="title" v-html="currentSong.name"></h1>
 				<h2 class="subtitle" v-html="currentSong.singer"></h2>
 			</div>
-			<div class="middle">
-				<div class="middle-l">
+			<div class="middle"
+				@touchstart="middleTouchStart"
+				@touchmove="middleTouchMove"
+				@touchend="middleTouchEnd">
+				<div class="middle-l" ref="middleL">
 					<div class="cd-wrapper" ref="cdWrapper">
 						<div class="cd" :class="cdCls">
 							<img class="image" :src="currentSong.image"/>
 						</div>
 					</div>
 				</div>
-				<!--<div class="middle-r">
-					歌词
-				</div>-->
+				<scroll class="middle-r" ref="lyricList" :data="currentLyric && currentLyric.lines">
+					<div class="lyric-wrapper">
+						<div v-if="currentLyric">
+							<p class="text" 
+								:class="{'current':currentLineNum===index}" 
+								ref="lyricLine" 
+								v-for="(line,index) in currentLyric.lines"
+								>{{line.txt}}</p>
+						</div>
+					</div>
+				</scroll>
 			</div>
 			<div class="bottom">
-				<!--<div class="dot-wrapper">
-					
-				</div>-->
+				<div class="dot-wrapper">
+					<span class="dot" :class="{'active':currentShow==='cd'}"></span>
+					<span class="dot" :class="{'active':currentShow==='lyric'}"></span>
+				</div>
 				<div class="progress-wrapper">
 					<span class="time time-l">{{_formatTime(currentTime)}}</span>
 					<div class="progress-bar-wrapper">
@@ -91,8 +103,11 @@ import {mapMutations} from 'vuex'
 import {prefixStyle} from 'common/js/dom'
 import {playMode} from 'common/js/config'
 import {shuffle} from 'common/js/util'
+import Lyric from 'lyric-parser'
+import Scroll from 'base/scroll/scroll'
 
 const transform = prefixStyle('transform');
+const transitionDuration = prefixStyle('transitionDuration');
 
 export default{
 	props:{
@@ -102,7 +117,10 @@ export default{
 		return {
 			songIsReady:false,
 			currentTime:0,
-			radius:32
+			radius:32,
+			currentLyric:null,
+			currentLineNum:0,
+			currentShow:'cd'
 		}
 	},
 	computed:{
@@ -134,6 +152,9 @@ export default{
 			'mode'
 		])
 	},
+	created(){
+		this.touch = {}
+	},
 	methods:{
 		back(){
 			this.setFullScreen(false)
@@ -157,14 +178,21 @@ export default{
 		loop(){
 			this.$refs.audio.currentTime = 0;
 			this.$refs.audio.play();
+			if(this.currentLyric){
+				this.currentLyric.seek(0);
+			}
 		},
 		updateTime(e){
 			this.currentTime = e.target.currentTime;
 		},
 		onPercentChange(percent){
-			this.$refs.audio.currentTime = this.currentSong.duration * percent;
+			const currentTime = this.currentSong.duration * percent;
+			this.$refs.audio.currentTime = currentTime;
 			if(!this.playing){
 				this.togglePlay();
+			}
+			if(this.currentLyric){
+				this.currentLyric.seek(currentTime*1000);
 			}
 		},
 		changeMode(){//播放模式切换
@@ -177,12 +205,18 @@ export default{
 			}else{
 				list = this.sequenceList;
 			}
-			this.setPlayList(list);
 			//设置currentIndex
-			this._resetCurrentIndex(list);
+			this._resetCurrentIndex(list);//注意顺序，最后设置playlist
+			this.setPlayList(list);
 		},
 		togglePlay(){
+			if(!this.songIsReady){
+				return
+			}
 			this.setPlayingState(!this.playing);
+			if(this.currentLyric){
+				this.currentLyric.togglePlay();
+			}
 		},
 		prev(){
 			if(!this.songIsReady){
@@ -249,6 +283,85 @@ export default{
 			this.$refs.cdWrapper.style.transition = '';
 			this.$refs.cdWrapper.style[transform] = '';
 		},
+		getLyric(){
+			this.currentSong.getLyric().then((lyric)=>{
+				this.currentLyric = new Lyric(lyric,this.handleLyric);
+				if(this.playing){
+					this.currentLyric.play();
+				}
+				console.log(this.currentLyric)
+			})
+		},
+		handleLyric({lineNum,txt}){
+			this.currentLineNum = lineNum;
+			if(lineNum>5){
+				let lineEl = this.$refs.lyricLine[lineNum-5];
+				this.$refs.lyricList.scrollToElement(lineEl,800);
+			}else{
+				this.$refs.lyricList.scrollTo(0,0,800);
+			}
+			
+		},
+		middleTouchStart(e){
+			this.touch.initiated = true;
+			// 用来判断是否是一次移动
+        	this.touch.moved = false
+			const touch = e.touches[0];
+			this.touch.startX = touch.pageX;
+			this.touch.startY = touch.pageY;
+		},
+		middleTouchMove(e){
+			if(!this.touch.initiated){
+				return
+			}
+			const touch = e.touches[0];
+			const deltaX = touch.pageX - this.touch.startX;
+			const deltaY = touch.pageY - this.touch.startY;
+			if(Math.abs(deltaY) > Math.abs(deltaX)){
+				return
+			}
+			if (!this.touch.moved) {
+	          this.touch.moved = true
+	        }
+			const left = this.currentShow === 'cd' ? 0 : -window.innerWidth;
+			const offsetWidth = Math.min(0, Math.max(-window.innerWidth, left+deltaX)); //距离右边界的距离
+			this.touch.percent = Math.abs(offsetWidth/window.innerWidth);
+			this.$refs.lyricList.$el.style[transform] = `translate3d(${offsetWidth}px,0,0)`;
+			this.$refs.lyricList.$el.style[transitionDuration] = 0;
+			this.$refs.middleL.style.opacity = 1-this.touch.percent;
+			this.$refs.middleL.style[transitionDuration] = 0;
+		},
+		middleTouchEnd(){
+			if (!this.touch.moved) {
+	          return
+	        }
+			let offsetWidth
+			let opacity
+			if(this.currentShow === 'cd'){
+				if(this.touch.percent>0.1){
+					offsetWidth = -window.innerWidth;
+					this.currentShow = 'lyric';
+					opacity = 0
+				}else{
+					offsetWidth = 0;
+					opacity = 1;
+				}
+			}else{
+				if(this.touch.percent<0.9){
+					offsetWidth = 0;
+					this.currentShow = 'cd';
+					opacity = 1;
+				}else{
+					offsetWidth = -window.innerWidth;
+					opacity = 0;
+				}
+			}
+			const time = 300;
+			this.$refs.lyricList.$el.style[transform] = `translate3d(${offsetWidth}px,0,0)`;
+			this.$refs.lyricList.$el.style[transitionDuration] = `${time}ms`;
+			this.$refs.middleL.style.opacity = opacity;
+			this.$refs.middleL.style[transitionDuration] = `${time}ms`;
+		},
 		_getPosAndScale(){
 			const targetWidth = 40;
 			const paddingLeft = 40;
@@ -268,7 +381,7 @@ export default{
 			time = time | 0;
 			const minute = time/60 | 0;
 			const second = this._pad(time%60);
-			return `${minute}:${second}`
+			return `${minute}:${second}`;
 		},
 		_resetCurrentIndex(list){
 			let index = list.findIndex((item)=>{        //----ES6语法！！！！
@@ -297,8 +410,12 @@ export default{
 			if(newSong.id===oldSong.id){
 				return
 			}
+			if(this.currentLyric){
+				this.currentLyric.stop();
+			}
 			this.$nextTick(()=>{
 				this.$refs.audio.play()
+				this.getLyric();
 			})
 		},
 		playing(newPlaying){
@@ -311,7 +428,8 @@ export default{
 	},
 	components:{
 		progressBar,
-		progressCircle
+		progressCircle,
+		Scroll
 	}
 }
 </script>
@@ -396,7 +514,7 @@ export default{
 	top: 80px;
 	bottom: 170px;
 	width:100%;
-	white-space: normal;
+	white-space: nowrap;
 	font-size: 0;
 }
 .player .normal-player .middle .middle-l{ 
@@ -415,21 +533,23 @@ export default{
 	height: 100%;
 }
 .player .normal-player .middle .middle-l .cd-wrapper .cd{ 
+	position: relative;
 	width: 100%;
 	height: 100%;
 	box-sizing: border-box;
 	border:10px solid rgba(255, 255, 255, 0.1);
 	border-radius: 50%;
+	overflow: hidden;
 }
 .player .normal-player .middle .middle-l .cd-wrapper .cd.play{ 
 	animation: rotate 20s linear infinite;
 }
  @keyframes rotate{
- 	from {
- 		transform: rotate(0)
+ 	0% {
+ 		transform: rotate(0);
  	}
-    to {
-    	transform: rotate(360deg)
+    100% {
+    	transform: rotate(360deg);
     }
  }
 .player .normal-player .middle .middle-l .cd-wrapper .cd.pause{ 
@@ -437,8 +557,8 @@ export default{
 }
 .player .normal-player .middle .middle-l .cd-wrapper .cd .image{ 
 	position: absolute;
-	top: 0;
-	left: 0;
+	top: 0px;
+	left: 0px;
 	width: 100%;
 	height: 100%;
 	border-radius: 50%;
@@ -447,10 +567,23 @@ export default{
 	display: inline-block;
 	vertical-align: top;
 	width: 100%;
-	height:100%;
+	height: 100%;
 	overflow: hidden;
 }
-
+.player .normal-player .middle .middle-r .lyric-wrapper{
+	width: 80%;
+	margin: 0 auto;
+	text-align: center;
+	overflow: hidden;
+}
+.player .normal-player .middle .middle-r .lyric-wrapper .text{
+	line-height: 32px;
+	font-size: 14px;
+	color: rgba(255, 255, 255, 0.5);
+}
+.player .normal-player .middle .middle-r .lyric-wrapper .text.current{
+	color: #fff;
+}
 
 .player .normal-player .bottom{
 	position: absolute;
@@ -458,10 +591,22 @@ export default{
 	width: 100%;
 }
 .player .normal-player .bottom .dot-wrapper{
-	
+	text-align: center;
+	font-size: 0;
 }
-
-
+.player .normal-player .bottom .dot-wrapper .dot{
+	display: inline-block;
+	vertical-align: middle;
+	width: 8px;
+	height: 8px;
+	margin: 0 4px;
+	border-radius: 5px;
+	background:rgba(255, 255, 255, 0.5);
+}
+.player .normal-player .bottom .dot-wrapper .dot.active{
+	width: 20px;
+	background:rgba(255, 255, 255, 0.8);
+}
 .player .normal-player .bottom .progress-wrapper{
 	display: flex;
 	align-items: center;

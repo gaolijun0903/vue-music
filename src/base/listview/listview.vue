@@ -40,6 +40,7 @@
 import Scroll from 'base/scroll/scroll'
 import Loading from 'base/loading/loading'
 import {getData} from 'common/js/dom'
+
 const ANCHOR_HEIGHT = 18;
 const FIXED_TITLE_HEIGHT = 30;
 
@@ -97,6 +98,9 @@ export default{
 		},
 		scroll(pos){
 			this.scrollY = pos.y;
+		},
+		refresh(){
+			this.$refs.listview.refresh();
 		},
 		_scrollToEle(index){
 			//右侧快速入口的上下有块空白区域，此处index=null，点击不做处理

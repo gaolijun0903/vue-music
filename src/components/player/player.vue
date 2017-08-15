@@ -26,6 +26,9 @@
 							<img class="image" :src="currentSong.image"/>
 						</div>
 					</div>
+					<div class="playing-lyric-wrapper">
+						<div class="playing-lyric">{{playingLyric}}</div>
+					</div>
 				</div>
 				<scroll class="middle-r" ref="lyricList" :data="currentLyric && currentLyric.lines">
 					<div class="lyric-wrapper">
@@ -47,7 +50,7 @@
 				<div class="progress-wrapper">
 					<span class="time time-l">{{_formatTime(currentTime)}}</span>
 					<div class="progress-bar-wrapper">
-						<progress-bar :percent="percent" @percentChange="onPercentChange"></progress-bar>
+						<progress-bar :percent="percent" @percentChange="onProgressBarChange"></progress-bar>
 					</div>
 					<span class="time time-r">{{_formatTime(currentSong.duration)}}</span>
 				</div>
@@ -90,7 +93,7 @@
 			</div>
 		</div>
 	</transition>
-	<audio ref="audio" :src="currentSong.url" @canplay="songReady" @error="songError" @timeupdate="updateTime" @ended="songEnd"></audio>
+	<audio ref="audio" :src="currentSong.url" @canplay="songReady" @error="songError" @timeupdate="timeUpdate" @ended="songEnd"></audio>
 </div>
 </template>
 
@@ -110,9 +113,6 @@ const transform = prefixStyle('transform');
 const transitionDuration = prefixStyle('transitionDuration');
 
 export default{
-	props:{
-		
-	},
 	data(){
 		return {
 			songIsReady:false,
@@ -120,7 +120,8 @@ export default{
 			radius:32,
 			currentLyric:null,
 			currentLineNum:0,
-			currentShow:'cd'
+			currentShow:'cd',
+			playingLyric:''
 		}
 	},
 	computed:{
@@ -182,10 +183,10 @@ export default{
 				this.currentLyric.seek(0);
 			}
 		},
-		updateTime(e){
+		timeUpdate(e){
 			this.currentTime = e.target.currentTime;
 		},
-		onPercentChange(percent){
+		onProgressBarChange(percent){
 			const currentTime = this.currentSong.duration * percent;
 			this.$refs.audio.currentTime = currentTime;
 			if(!this.playing){
@@ -236,13 +237,17 @@ export default{
 			if(!this.songIsReady){
 				return
 			}
-			let index = this.currentIndex + 1;
-			if(index === this.playList.length){
-				index = 0
-			}
-			this.setCurrentIndex(index);
-			if(!this.playing){
-				this.togglePlay()
+			if(this.playList.length === 1){
+				this.loop();
+			}else{
+				let index = this.currentIndex + 1;
+				if(index === this.playList.length){
+					index = 0
+				}
+				this.setCurrentIndex(index);
+				if(!this.playing){
+					this.togglePlay()
+				}
 			}
 			this.songIsReady = false;
 		},
@@ -289,7 +294,11 @@ export default{
 				if(this.playing){
 					this.currentLyric.play();
 				}
-				console.log(this.currentLyric)
+//				console.log(this.currentLyric)
+			}).catch(()=>{
+				this.currentLyric = null;
+				this.playingLyric = '';
+				this.currentLineNum = 0;
 			})
 		},
 		handleLyric({lineNum,txt}){
@@ -300,7 +309,7 @@ export default{
 			}else{
 				this.$refs.lyricList.scrollTo(0,0,800);
 			}
-			
+			this.playingLyric = txt
 		},
 		middleTouchStart(e){
 			this.touch.initiated = true;
@@ -413,10 +422,10 @@ export default{
 			if(this.currentLyric){
 				this.currentLyric.stop();
 			}
-			this.$nextTick(()=>{
+			setTimeout(()=>{
 				this.$refs.audio.play()
 				this.getLyric();
-			})
+			},1000)
 		},
 		playing(newPlaying){
 			const audio = this.$refs.audio;
@@ -563,6 +572,19 @@ export default{
 	height: 100%;
 	border-radius: 50%;
 }
+.player .normal-player .middle .middle-l .playing-lyric-wrapper{
+	width: 80%;
+	margin: 30px auto 0 auto;
+	text-align: center;
+	overflow: hidden;
+}
+.player .normal-player .middle .middle-l .playing-lyric-wrapper .playing-lyric{
+	height: 20px;
+	line-height: 20px;
+	font-size: 14px;
+	color: rgba(255, 255, 255, 0.5);
+}
+
 .player .normal-player .middle .middle-r{
 	display: inline-block;
 	vertical-align: top;

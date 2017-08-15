@@ -32,12 +32,14 @@ import songList from 'base/song-list/song-list'
 import Loading from 'base/loading/loading'
 import {prefixStyle} from 'common/js/dom'
 import {mapActions} from 'vuex'
+import {playlistMixin} from 'common/js/mixin'
 
 const TITLE_HEIGHT = 30
 const transform = prefixStyle('transform')
 const backdrop = prefixStyle('backdrop-filter')
 
 export default {
+	mixins:[playlistMixin],
 	props:{
 		songs:{
 			type:Array,
@@ -72,6 +74,11 @@ export default {
 		this.$refs.list.$el.style.top = `${this.imageHeight}px`; //因为list是scroll组件，所以要用$el获取元素
 	},
 	methods:{
+		handlePlaylist(playlist){
+			const bottom = playlist.length>0 ? '60px' : ''
+			this.$refs.list.$el.style.bottom = bottom;
+			this.$refs.list.refresh()
+		},
 		scroll(pos){
 			this.scrollY = pos.y;
 		},

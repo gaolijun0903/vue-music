@@ -12,3 +12,4 @@ export const SET_PLAY_MODE = 'SET_PLAY_MODE'
 
 export const SET_CURRENTINDEX = 'SET_CURRENTINDEX'
 
+export const SET_DISC = 'SET_DISC'

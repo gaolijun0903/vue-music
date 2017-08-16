@@ -4,6 +4,7 @@ import recommend from 'components/recommend/recommend'
 import rank from 'components/rank/rank'
 import singer from 'components/singer/singer'
 import search from 'components/search/search'
+import toplist from 'components/toplist/toplist'
 import singerDetail from 'components/singer-detail/singer-detail'
 import disc from 'components/disc/disc'
 
@@ -25,7 +26,11 @@ export default new Router({
     },
     {
       path: '/rank',
-      component: rank
+      component: rank,
+      children:[{
+      	path: ':id',
+      	component: toplist
+      }]
     },
     {
       path: '/singer',

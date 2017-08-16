@@ -29,13 +29,16 @@ export default{
 		])
 	},
 	created(){
-//		this._getSongList()
+		this._getSongList()
 	},
 	methods:{
 		_getSongList(){
+			if(!this.disc.dissid){
+				this.$router.push({path:'/recommend'});
+				return
+			}
 			getSongList(this.disc.dissid).then((res)=>{
 				if(res.code === ERR_OK){
-					console.log(res.cdlist[0].songlist);
 					this.songs = this._normalizeSongs(res.cdlist[0].songlist);
 				}
 			})

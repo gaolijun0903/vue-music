@@ -12,9 +12,6 @@ import {createSong} from 'common/js/song'
 import musicList from 'components/music-list/music-list'
 
 export default{
-	props:{
-		
-	},
 	data(){
 		return{
 			songs:[]

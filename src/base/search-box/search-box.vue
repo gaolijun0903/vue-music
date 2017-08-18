@@ -1,38 +1,42 @@
 <template>
-	<div class="search-box">
-		<i class="icon-search"></i>
-		<input type="text" v-model="query" class="box" :placeholder="placeholder" />
-		<i class="icon-dismiss" v-show="query" @click="clear"></i>
-	</div>
+<div class="search-box">
+	<i class="icon-search"></i>
+	<input type="text" v-model="query" class="box" :placeholder="placeholder" ref="input"/>
+	<i class="icon-dismiss" v-show="query" @click="clear"></i>
+</div>
 </template>
 
 <script>
-	export default{
-		props:{
-			placeholder:{
-				type:String,
-				default:'搜索歌曲、歌手'
-			}
+import {debounce} from 'common/js/util'	
+export default{
+	props:{
+		placeholder:{
+			type:String,
+			default:'搜索歌曲、歌手'
+		}
+	},
+	data(){
+		return {
+			query:''
+		}
+	},
+	created(){
+		this.$watch('query',debounce((newQuery)=>{
+			this.$emit('query',newQuery)   //debounce节流处理
+		},200))
+	},
+	methods:{
+		clear(){
+			this.query = ''
 		},
-		data(){
-			return {
-				query:''
-			}
+		setQuery(query){
+			this.query = query;
 		},
-		created(){
-			this.$watch('query',(newQuery)=>{
-				this.$emit('query',newQuery)
-			})
-		},
-		methods:{
-			clear(){
-				this.query = ''
-			},
-			setQuery(query){
-				this.query = query;
-			}
+		blur(){
+			this.$refs.input.blur();
 		}
 	}
+}
 </script>
 
 <style>

@@ -1,7 +1,13 @@
 <template>
-<scroll class="suggest">
+<scroll class="suggest" 
+	ref="suggest"
+	:data="suggestList" 
+	:pullup="pullup" 
+	:beforeScroll="beforeScroll"
+	@scrollNearEnd="searchMore" 
+	@beforeScrollStart="beforeListScroll">
 	<ul class="suggest-list">
-		<li class="suggest-item" v-for="item in suggestList">
+		<li class="suggest-item" v-for="item in suggestList" @click="selectItem(item)">
 			<div class="icon" :class="getIconCls(item)">
 				<i></i>
 			</div>
@@ -9,20 +15,26 @@
 				<p class="text"v-html="getDisplayName(item)"></p>
 			</div>
 		</li>
+		<loading title="" v-show="hasMore"></loading>
 	</ul>
-	<!--<div class="noresult-wrapper" v-show="!suggestList.length">
-		
-	</div>-->
+	<div class="noresult-wrapper" v-show="!hasMore && !suggestList.length">
+		<no-result title="抱歉，暂无搜索结果"></no-result>
+	</div>
 </scroll>
 </template>
 
 <script>
 import Scroll from 'base/scroll/scroll'
+import Loading from 'base/loading/loading'
+import noResult from 'base/no-result/no-result'
 import {search} from 'api/search'
 import {ERR_OK} from 'api/config'
 import {createSong} from 'common/js/song'
+import {createSinger} from 'common/js/singer'
+import {mapMutations,mapActions} from 'vuex'
 
 const TYPE_SINGER = 'singer'
+const perpage = 20
 	
 export default{
 	props:{
@@ -38,10 +50,24 @@ export default{
 	data(){
 		return{
 			suggestList:[],
-			page:1
+			page:1,
+			pullup:true,
+			beforeScroll:true,
+			hasMore:true
 		}
 	},
 	methods:{
+		selectItem(item){
+			if(item.type === TYPE_SINGER){
+				this.$router.push({
+					path:`/search/${item.singermid}`
+				})
+				this.setSinger(createSinger(item))
+			}else{
+				this.insertSong(item)
+			}
+			this.$emit('select',item)
+		},
 		getIconCls(item){
 			if(item.type === TYPE_SINGER){
 				return 'icon-mine'
@@ -55,13 +81,36 @@ export default{
 				return `${item.name}-${item.singer}`
 			}
 		},
-		_search(query){
-			search(query,this.page,this.showSinger).then((res)=>{
+		beforeListScroll(){
+			this.$emit('beforeListScroll');
+		},
+		searchMore(){
+			if(!this.hasMore){
+				return
+			}
+			this.page++
+			search(this.query,this.page,this.showSinger,perpage).then((res)=>{
 				if(res.code === ERR_OK){
-					console.log(res.data)
-					this.suggestList = this._genResult(res.data)
+					this.suggestList = this.suggestList.concat(this._genResult(res.data));
+					this._checkMore(res.data.song);
 				}
 			})
+		},
+		_search(query){
+			this.page = 1;
+			this.hasMore = true;
+			this.$refs.suggest.scrollTo(0,0);
+			search(query,this.page,this.showSinger,perpage).then((res)=>{
+				if(res.code === ERR_OK){
+					this.suggestList = this._genResult(res.data);
+					this._checkMore(res.data.song);
+				}
+			})
+		},
+		_checkMore(song){
+			if(!song.list.length || song.totalnum < (song.curnum + song.curpage*perpage)){
+				this.hasMore = false;
+			}
 		},
 		_genResult(data){
 			let ret = [];
@@ -81,7 +130,13 @@ export default{
 				}
 			})
 			return ret
-		}
+		},
+		...mapMutations({
+			setSinger:'SET_SINGER'
+		}),
+		...mapActions([
+			'insertSong'
+		])
 	},
 	watch:{
 		query(newQuery){
@@ -89,7 +144,9 @@ export default{
 		}
 	},
 	components:{
-		Scroll
+		Scroll,
+		Loading,
+		noResult
 	}
 }
 </script>
@@ -127,7 +184,7 @@ export default{
 }
 .suggest .noresult-wrapper{
 	position: absolute;
-	top: 50%;
+	top: 40%;
 	width: 100%;
 	transform: translateY(-50%);
 }

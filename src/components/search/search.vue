@@ -13,26 +13,21 @@
 					</li>
 				</ul>
 			</div>
-			<div class="search-history">
+			<div class="search-history" v-show="searchHistory.length">
 				<div class="title">
 					<span class="text">搜索历史</span>
-					<span class="clear">
+					<span class="clear" @click="deleteAll">
 						<i class="icon-clear"></i>
 					</span>
 				</div>
-				<ul>
-					<li class="key" href="" v-for="item in hotkeys">
-						<span>{{item.k}}</span>
-					</li>
-				</ul>
+				<search-history-list :searches="searchHistory" @select="addQuery" @delete="deleteOne"></search-history-list>
 			</div>
 		</scroll>
-			
 	</div>
-		
 	<div class="search-result" v-show="query">
-		<suggest :query="query"></suggest>
+		<suggest :query="query" @beforeListScroll="blurInput" @select="saveSearch"></suggest>
 	</div>
+	<router-view></router-view>
 </div>
 </template>
 
@@ -40,8 +35,10 @@
 import searchBox from 'base/search-box/search-box'
 import suggest from 'components/suggest/suggest'
 import Scroll from 'base/scroll/scroll'
+import searchHistoryList from 'base/search-history-list/search-history-list'
 import {getHotKey} from 'api/search'
 import {ERR_OK} from 'api/config'
+import {mapActions,mapGetters} from 'vuex'
 
 
 export default {
@@ -51,15 +48,37 @@ export default {
 			query:''
 		}
 	},
+	computed:{
+		...mapGetters([
+			'searchHistory'
+		])
+	},
 	created(){
 		this._getHotKey();
 	},
 	methods:{
+		blurInput(){
+			this.$refs.searchBox.blur();
+		},
 		onQueryChange(newQuery){
 			this.query = newQuery
 		},
 		addQuery(k){
 			this.$refs.searchBox.setQuery(k)
+		},
+		deleteAll(){
+			//改写这里了！！！！！！！！！！！！！
+			//10-15
+			
+			
+			
+			
+		},
+		deleteOne(item){
+			this.deleteSearchHistory(item)
+		},
+		saveSearch(){
+			this.saveSearchHistory(this.query)
 		},
 		_getHotKey(){
 			getHotKey().then((res)=>{
@@ -67,12 +86,17 @@ export default {
 					this.hotkeys = res.data.hotkey.slice(0,10);
 				}
 			})
-		}
+		},
+		...mapActions([
+			'saveSearchHistory',
+			'deleteSearchHistory'
+		])
 	},
 	components:{
 		searchBox,
 		Scroll,
-		suggest
+		suggest,
+		searchHistoryList
 	}
 }
 </script>

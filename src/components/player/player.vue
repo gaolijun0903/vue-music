@@ -88,11 +88,12 @@
 					<i class="icon-mini" :class="miniIcon" @click.stop="togglePlay"></i>
 				</progress-circle>
 			</div>
-			<div class="control">
+			<div class="control" @click.stop="showPlaylist">
 				<i class="icon-playlist"></i>
 			</div>
 		</div>
 	</transition>
+	<playlist ref="playlist"></playlist>
 	<audio ref="audio" :src="currentSong.url" @canplay="songReady" @error="songError" @timeupdate="timeUpdate" @ended="songEnd"></audio>
 </div>
 </template>
@@ -101,13 +102,13 @@
 import animations from 'create-keyframe-animation'
 import progressBar from 'base/progress-bar/progress-bar'
 import progressCircle from 'base/progress-circle/progress-circle'
-import {mapGetters} from 'vuex'
-import {mapMutations} from 'vuex'
+import Scroll from 'base/scroll/scroll'
+import playlist from 'components/playlist/playlist'
+import {mapGetters,mapActions,mapMutations} from 'vuex'
 import {prefixStyle} from 'common/js/dom'
 import {playMode} from 'common/js/config'
 import {shuffle} from 'common/js/util'
 import Lyric from 'lyric-parser'
-import Scroll from 'base/scroll/scroll'
 
 const transform = prefixStyle('transform');
 const transitionDuration = prefixStyle('transitionDuration');
@@ -165,6 +166,7 @@ export default{
 		},
 		songReady(){
 			this.songIsReady = true;
+//			this.savePlayHistory(this.currentSong)
 		},
 		songError(){
 			this.songIsReady = true;
@@ -371,6 +373,9 @@ export default{
 			this.$refs.middleL.style.opacity = opacity;
 			this.$refs.middleL.style[transitionDuration] = `${time}ms`;
 		},
+		showPlaylist(){
+			this.$refs.playlist.show();
+		},
 		_getPosAndScale(){
 			const targetWidth = 40;
 			const paddingLeft = 40;
@@ -412,11 +417,17 @@ export default{
 			setCurrentIndex: 'SET_CURRENTINDEX',
 			setPlayMode:'SET_PLAY_MODE',
 			setPlayList:'SET_PLAYLIST'
-		})
+		}),
+		...mapActions([
+			'savePlayHistory'
+		])
 	},
 	watch:{
 		currentSong(newSong,oldSong){
-			if(newSong.id===oldSong.id){
+			if(!newSong.id){//清空播放列表时newSong为空对象，不执行以下程序
+				return
+			}
+			if(newSong.id===oldSong.id){//切换播放模式时，currentSong会变化
 				return
 			}
 			if(this.currentLyric){
@@ -438,7 +449,8 @@ export default{
 	components:{
 		progressBar,
 		progressCircle,
-		Scroll
+		Scroll,
+		playlist
 	}
 }
 </script>

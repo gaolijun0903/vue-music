@@ -96,6 +96,9 @@ export default{
 				}
 			})
 		},
+		refresh(){
+			this.$refs.suggest.refresh();
+		},
 		_search(query){
 			this.page = 1;
 			this.hasMore = true;

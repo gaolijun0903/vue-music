@@ -8,24 +8,32 @@
 			</div>
 		</div>
 		<div class="search-box-wrapper">
-			<search-box placeholder="搜索歌曲" @query="onQueryChange"></search-box>
+			<search-box ref="searchBox" placeholder="搜索歌曲" @query="onQueryChange"></search-box>
 		</div>
-		<div class="shortcut">
+		<div class="shortcut" v-show="!query">
 			<switches :current-index="currentIndex" :switches="switches" @switch="switchItem"></switches>
 			<div class="switch-list-wrapper">
-				<div class="list-scroll" v-show="currentIndex===0">
+				<scroll ref="playhistory" class="list-scroll" v-show="currentIndex===0" :data="playHistory">
 					<div class="list-inner">
-						<song-list :songs="playHistory" @select=""></song-list>
+						<song-list :songs="playHistory" @select="selectSong"></song-list>
 					</div>
-				</div>
-				<div class="list-scroll" v-show="currentIndex===1">
-					最近搜索列表
-				</div>
+				</scroll>
+				<scroll ref="searchhistory" class="list-scroll" v-show="currentIndex===1" :data="searchHistory" :refreshDelay="refreshDelay">
+					<div class="list-inner">
+						<search-history-list :searches="searchHistory" @select="addQuery" @delete="deleteSearchHistory"></search-history-list>
+					</div>
+				</scroll>
 			</div>
 		</div>
-		<div class="search-result">
-			
+		<div class="search-result" v-show="query">
+			<suggest :query='query' :showSinger="showSinger" @beforeListScroll="blurInput" @select="selectSuggest"></suggest>
 		</div>
+		<top-tip ref="toptip">
+			<div class="tip-title">
+				<i class="icon-ok"></i>
+				<span class="text">1首歌曲已经添加到播放列表</span>
+			</div>
+		</top-tip>
 	</div>
 </transition>
 </template>
@@ -36,14 +44,21 @@ import suggest from 'components/suggest/suggest'
 import scroll from 'base/scroll/scroll'
 import switches from 'base/switches/switches'
 import songList from 'base/song-list/song-list'
-import {mapGetters} from 'vuex'
+import searchHistoryList from 'base/search-history-list/search-history-list'
+import topTip from 'base/top-tip/top-tip'
+import {mapGetters,mapActions} from 'vuex'
+import Song from 'common/js/song'
+import {searchMixin} from 'common/js/mixin'
 
 export default{
+	mixins:[searchMixin],
 	data(){
 		return{
 			showFlag:false,
 			switches:[{text:'最近播放'},{text:'搜索历史'}],
-			currentIndex:0
+			currentIndex:0,
+			showSinger:false,
+			refreshDelay:100
 		}
 	},
 	computed:{
@@ -54,23 +69,42 @@ export default{
 	methods:{
 		show(){
 			this.showFlag = true;
+			setTimeout(()=>{
+				if(this.currentIndex===0){
+					this.$refs.playhistory.refresh();
+				}else{
+					this.$refs.searchhistory.refresh();
+				}
+			},20)
 		},
 		hide(){
 			this.showFlag = false;
 		},
-		onQueryChange(query){
-			console.log(query)
-		},
 		switchItem(index){
 			this.currentIndex = index;
-		}
+		},
+		selectSong(song,index){
+			if(index !== 0){
+				this.insertSong(new Song(song));
+				this.$refs.toptip.show();
+			}
+		},
+		selectSuggest(){
+			this.saveSearch();
+			this.$refs.toptip.show();
+		},
+		...mapActions([
+			'insertSong'
+		])
 	},
 	components:{
 		searchBox,
 		suggest,
 		scroll,
 		switches,
-		songList
+		songList,
+		searchHistoryList,
+		topTip
 	}
 }
 </script>
@@ -131,6 +165,18 @@ export default{
 .add-song .shortcut .switch-list-wrapper .list-scroll .list-inner{
 	padding: 20px 30px;
 }
-
-
+.add-song .tip-title{
+	text-align: center;
+	padding: 18px 0;
+	font-size: 0;
+}
+.add-song .tip-title .icon-ok{
+	margin-right: 4px;
+	font-size: 14px;
+	color: #ffcd32;
+}
+.add-song .tip-title .text{
+	font-size: 14px;
+	color: #fff;
+}
 </style>

@@ -12,7 +12,7 @@
 				</div>	
 			</div>
 			
-			<scroll ref="listContent" class="list-content" :data="sequenceList">
+			<scroll ref="listContent" class="list-content" :data="sequenceList" :refreshDelay="refreshDelay">
 				<transition-group ref="list" name="list" tag="ul">
 					<li class="item" :key="song.id" v-for="(song,index) in sequenceList" @click="selectSong(song,index)">
 						<i class="current" :class="getCurrentCls(song)"></i>
@@ -42,33 +42,25 @@
 </template>
 
 <script>
-import {mapGetters,mapActions,mapMutations} from 'vuex'
+import {mapActions} from 'vuex'
 import {playMode} from 'common/js/config'
-import {shuffle} from 'common/js/util'
 import Scroll from 'base/scroll/scroll'
 import confirm from 'base/confirm/confirm'
 import addSong from 'components/add-song/add-song'
-
+import {playerMixin} from 'common/js/mixin'
 
 export default{
+	mixins:[playerMixin],
 	data(){
 		return{
-			showFlag:false
+			showFlag:false,
+			refreshDelay:100
 		}
 	},
 	computed:{
 		modeText(){
 			return this.mode===playMode.sequence ? '顺序播放' : this.mode===playMode.loop ? '单曲循环' : '随机播放';
-		},
-		iconMode(){
-			return this.mode===playMode.sequence ? 'icon-sequence' : this.mode===playMode.loop ? 'icon-loop' : 'icon-random';
-		},
-		...mapGetters([
-			'playList',
-			'sequenceList',
-			'currentSong',
-			'mode'
-		])
+		}
 	},
 	methods:{
 		show(){
@@ -103,26 +95,7 @@ export default{
 			this.setCurrentIndex(index);
 			this.setPlayingState(true);
 		},
-		changeMode(){//播放模式切换
-			const mode = (this.mode + 1) % 3;
-			this.setPlayMode(mode);
-			//修改歌曲列表
-			let list = null;
-			if(mode === playMode.random){
-				list = shuffle(this.sequenceList);
-			}else{
-				list = this.sequenceList;
-			}
-			//设置currentIndex
-			this._resetCurrentIndex(list);//注意顺序，最后设置playlist
-			this.setPlayList(list);
-		},
-		_resetCurrentIndex(list){
-			let index = list.findIndex((item)=>{        //----ES6语法！！！！
-				return item.id === this.currentSong.id
-			})
-			this.setCurrentIndex(index);
-		},
+		
 		toggleFavourite(item){
 			
 		},
@@ -138,13 +111,7 @@ export default{
 		...mapActions([
 			'deleteSong',
 			'clearSongList'
-		]),
-		...mapMutations({
-			setCurrentIndex: 'SET_CURRENTINDEX',
-			setPlayMode:'SET_PLAY_MODE',
-			setPlayList:'SET_PLAYLIST',
-			setPlayingState:'SET_PLAYING_STATE'
-		})
+		])
 	},
 	watch:{
 		currentSong(newSong,oldSong){

@@ -78,7 +78,7 @@ export const deleteSong = function({commit,state},song){
 	let sIndex = findIndex(sequencelist,song);
 	playlist.splice(pIndex,1);
 	sequencelist.splice(sIndex,1);
-	if(currentIndex>pIndex){
+	if(currentIndex>pIndex || currentIndex===playlist.length){
 		currentIndex--
 	}
 	commit(types.SET_SEQUENCELIST,sequencelist)

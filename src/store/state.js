@@ -12,7 +12,7 @@ const state = {
 	disc:{},
 	toplist:{},
 	searchHistory:loadSearch(),
-	playHistory:[]
+	playHistory:loadPlay()
 }
 
 export default state

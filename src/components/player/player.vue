@@ -551,8 +551,8 @@ export default{
 }
 .player .normal-player .middle .middle-l .cd-wrapper .cd .image{ 
 	position: absolute;
-	top: 0px;
-	left: 0px;
+	top: 0;
+	left: 0;
 	width: 100%;
 	height: 100%;
 	border-radius: 50%;

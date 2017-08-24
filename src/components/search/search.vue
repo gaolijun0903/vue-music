@@ -105,11 +105,11 @@ export default {
 
 <style>
 .search{
-	position: fixed;
+	/*position: fixed;
 	top: 88px;
 	bottom: 0;
 	width: 100%;
-	overflow: hidden;
+	overflow: hidden;*/
 }
 .search .search-box-wrapper{
 	margin: 20px;

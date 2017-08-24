@@ -13,12 +13,12 @@
 		<div class="shortcut" v-show="!query">
 			<switches :current-index="currentIndex" :switches="switches" @switch="switchItem"></switches>
 			<div class="switch-list-wrapper">
-				<scroll ref="playhistory" class="list-scroll" v-show="currentIndex===0" :data="playHistory">
+				<scroll ref="playhistory" class="list-scroll" v-if="currentIndex===0" :data="playHistory">
 					<div class="list-inner">
 						<song-list :songs="playHistory" @select="selectSong"></song-list>
 					</div>
 				</scroll>
-				<scroll ref="searchhistory" class="list-scroll" v-show="currentIndex===1" :data="searchHistory" :refreshDelay="refreshDelay">
+				<scroll ref="searchhistory" class="list-scroll" v-if="currentIndex===1" :data="searchHistory" :refreshDelay="refreshDelay">
 					<div class="list-inner">
 						<search-history-list :searches="searchHistory" @select="addQuery" @delete="deleteSearchHistory"></search-history-list>
 					</div>
@@ -34,6 +34,9 @@
 				<span class="text">1首歌曲已经添加到播放列表</span>
 			</div>
 		</top-tip>
+		<div class="no-result-wrapper" v-show="!query && noResult">
+			<no-result :title="noResultDesc"></no-result>
+		</div>
 	</div>
 </transition>
 </template>
@@ -46,6 +49,8 @@ import switches from 'base/switches/switches'
 import songList from 'base/song-list/song-list'
 import searchHistoryList from 'base/search-history-list/search-history-list'
 import topTip from 'base/top-tip/top-tip'
+
+import noResult from 'base/no-result/no-result'
 import {mapGetters,mapActions} from 'vuex'
 import Song from 'common/js/song'
 import {searchMixin} from 'common/js/mixin'
@@ -62,6 +67,20 @@ export default{
 		}
 	},
 	computed:{
+		noResult(){
+			if(this.currentIndex === 0){
+				return !this.playHistory.length;
+			}else{
+				return !this.searchHistory.length;
+			}
+		},
+		noResultDesc(){
+			if(this.currentIndex === 0){
+				return '您还没有听过歌曲';
+			}else{
+				return '没有搜索记录';
+			}
+		},
 		...mapGetters([
 			'playHistory'
 		])
@@ -104,7 +123,8 @@ export default{
 		switches,
 		songList,
 		searchHistoryList,
-		topTip
+		topTip,
+		noResult
 	}
 }
 </script>
@@ -148,15 +168,12 @@ export default{
 .add-song .search-box-wrapper{
 	margin: 20px;
 }
-.add-song .shortcut{
-	
-}
+
 .add-song .shortcut .switch-list-wrapper{
 	position: absolute;
 	top: 165px;
 	bottom: 0;
-	width: 100%;
-	
+	width: 100%;	
 }
 .add-song .shortcut .switch-list-wrapper .list-scroll{
 	height: 100%;
@@ -164,6 +181,12 @@ export default{
 }
 .add-song .shortcut .switch-list-wrapper .list-scroll .list-inner{
 	padding: 20px 30px;
+}
+.add-song .search-result{
+	position: fixed;
+	top: 124px;
+	bottom: 0;
+	width: 100%;	
 }
 .add-song .tip-title{
 	text-align: center;
@@ -178,5 +201,11 @@ export default{
 .add-song .tip-title .text{
 	font-size: 14px;
 	color: #fff;
+}
+.add-song .no-result-wrapper{
+	position: absolute;
+    width: 100%;
+    top: 50%;
+    transform: translateY(-50%);
 }
 </style>

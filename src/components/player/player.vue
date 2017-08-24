@@ -55,20 +55,20 @@
 					<span class="time time-r">{{_formatTime(currentSong.duration)}}</span>
 				</div>
 				<div class="operators">
-					<div class="icon i-left" :class="disableCls" @click="changeMode">
-						<i :class="iconMode"></i>
+					<div class="icon i-left" :class="disableCls">
+						<i :class="iconMode" @click="changeMode"></i>
 					</div>
-					<div class="icon i-left" @click="prev" :class="disableCls">
-						<i class="icon-prev"></i>
+					<div class="icon i-left" :class="disableCls">
+						<i class="icon-prev" @click="prev"></i>
 					</div>
-					<div class="icon i-center" @click="togglePlay" :class="disableCls">
-						<i :class="playIcon"></i>
-					</div>
-					<div class="icon i-right" @click="next" :class="disableCls">
-						<i class="icon-next"></i>
+					<div class="icon i-center" :class="disableCls">
+						<i :class="playIcon" @click="togglePlay"></i>
 					</div>
 					<div class="icon i-right" :class="disableCls">
-						<i class="icon icon-not-favorite"></i>
+						<i class="icon-next" @click="next"></i>
+					</div>
+					<div class="icon i-right" :class="disableCls">
+						<i class="icon" :class="getFavoriteIcon(currentSong)" @click="toggleFavourite(currentSong)"></i>
 					</div>
 				</div>
 			</div>
@@ -94,7 +94,7 @@
 		</div>
 	</transition>
 	<playlist ref="playlist"></playlist>
-	<audio ref="audio" :src="currentSong.url" @canplay="songReady" @error="songError" @timeupdate="timeUpdate" @ended="songEnd"></audio>
+	<audio ref="audio" :src="currentSong.url" @play="songReady" @error="songError" @timeupdate="timeUpdate" @ended="songEnd"></audio>
 </div>
 </template>
 
@@ -160,7 +160,7 @@ export default{
 		},
 		songReady(){
 			this.songIsReady = true;
-			this.savePlayHistory(this.currentSong)
+			this.savePlayHistory(this.currentSong);
 		},
 		songError(){
 			this.songIsReady = true;
@@ -221,6 +221,7 @@ export default{
 			}
 			if(this.playList.length === 1){
 				this.loop();
+				return
 			}else{
 				let index = this.currentIndex + 1;
 				if(index === this.playList.length){
@@ -272,6 +273,9 @@ export default{
 		},
 		getLyric(){
 			this.currentSong.getLyric().then((lyric)=>{
+				if(this.currentSong.lyric !== lyric){
+					return   //保证快速切换时歌词不会乱掉
+				}
 				this.currentLyric = new Lyric(lyric,this.handleLyric);
 				if(this.playing){
 					this.currentLyric.play();
@@ -402,7 +406,8 @@ export default{
 			if(this.currentLyric){
 				this.currentLyric.stop();
 			}
-			setTimeout(()=>{
+			clearTimeout(this.timer)
+			this.timer = setTimeout(()=>{
 				this.$refs.audio.play()
 				this.getLyric();
 			},1000)
@@ -412,7 +417,6 @@ export default{
 			this.$nextTick(()=>{
 				newPlaying ? audio.play() : audio.pause();
 			})
-			
 		}
 	},
 	components:{

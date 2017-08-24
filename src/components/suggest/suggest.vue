@@ -8,8 +8,8 @@
 	@beforeScrollStart="beforeListScroll">
 	<ul class="suggest-list">
 		<li class="suggest-item" v-for="item in suggestList" @click="selectItem(item)">
-			<div class="icon" :class="getIconCls(item)">
-				<i></i>
+			<div class="icon">
+				<i :class="getIconCls(item)"></i>
 			</div>
 			<div class="name">
 				<p class="text"v-html="getDisplayName(item)"></p>

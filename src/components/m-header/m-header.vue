@@ -36,13 +36,12 @@ export default{}
     line-height: 44px;
     font-size: 18px;
 }
-
 .m-header .mine{
 	position: absolute;
 	right: 0;
 	top: 0;
 }
-.icon-mine{
+.m-header .mine .icon-mine{
 	display: block;
 	padding: 12px;
 	font-size: 20px;

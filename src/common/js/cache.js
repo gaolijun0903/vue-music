@@ -4,7 +4,10 @@ const SEARCH_KEY = '__search__'
 const SEARCH_MAX_LENGTH = 15
 
 const PLAY_HISTORY_KEY = '__play__'
-const PLAY_HISTORY_MAX_LENGTH = 15
+const PLAY_HISTORY_MAX_LENGTH = 200
+
+const FAVOURITE_KEY = '__favourite__'
+const FAVOURITE_MAX_LENGTH = 200
 
 
 function insertArray(arr,val,compare,maxLen){
@@ -55,8 +58,6 @@ export function clearSearch(){
 	return []
 }
 
-
-//这里有问题！！！！！！！！！
 export function savePlay(song){
 	let playHistory = storage.get(PLAY_HISTORY_KEY,[]);
 	insertArray(playHistory,song,(item)=>{
@@ -70,10 +71,27 @@ export function loadPlay(){
 	return storage.get(PLAY_HISTORY_KEY,[])
 }
 
+export function saveFavourite(song){
+	let songs = storage.get(FAVOURITE_KEY,[])
+	insertArray(songs,song,(item)=>{
+		return item.id === song.id
+	},FAVOURITE_MAX_LENGTH)
+	storage.set(FAVOURITE_KEY,songs)
+	return songs
+}
 
+export function deleteFavourite(song){
+	let songs = storage.get(FAVOURITE_KEY,[])
+	deleteFromArray(songs,(item)=>{
+		return song.id === item.id
+	})
+	storage.set(FAVOURITE_KEY,songs)
+	return songs
+}
 
-
-
+export function loadFavourite(){
+	return storage.get(FAVOURITE_KEY,[])
+}
 
 
 

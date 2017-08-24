@@ -18,7 +18,7 @@
 						<i class="current" :class="getCurrentCls(song)"></i>
 						<span class="text">{{song.name}}</span>
 						<span class="like" @click.stop="toggleFavourite(song)">
-							<i class=""></i>
+							<i :class="getFavoriteIcon(song)"></i>
 						</span>
 						<span class="delete" @click.stop="deleteOne(song)">
 							<i class="icon-delete"></i>
@@ -94,10 +94,6 @@ export default{
 			}
 			this.setCurrentIndex(index);
 			this.setPlayingState(true);
-		},
-		
-		toggleFavourite(item){
-			
 		},
 		showConfirm(){
 			this.$refs.confirm.show()
@@ -227,6 +223,12 @@ export default{
 }
 .playlist .list-wrapper .list-content .item .like{
 	position: relative;
+	margin-right: 15px;
+	font-size: 12px;
+	color: #ffcd32;
+}
+.playlist .list-wrapper .list-content .item .like .icon-favorite{
+	color: #d93f30;
 }
 .playlist .list-wrapper .list-content .item .delete{
 	position: relative;

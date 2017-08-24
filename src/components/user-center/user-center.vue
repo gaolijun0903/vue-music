@@ -12,11 +12,11 @@
 			<span class="text">随机播放全部</span>
 		</div>
 		<div class="list-wrapper" ref="listWrapper">
-			<!--<scroll ref="favoritelist" class="list-scroll" v-show="currentIndex===0" :data="favoriteList">
+			<scroll ref="favoritelist" class="list-scroll" v-if="currentIndex===0" :data="favouriteList">
 				<div class="list-inner">
-					<song-list :songs="favoriteList" @select="selectSong"></song-list>
+					<song-list :songs="favouriteList" @select="selectSong"></song-list>
 				</div>
-			</scroll>-->
+			</scroll>
 			<scroll ref="playhistory" class="list-scroll" v-if="currentIndex===1" :data="playHistory">
 				<div class="list-inner">
 					<song-list :songs="playHistory" @select="selectSong"></song-list>
@@ -37,9 +37,11 @@ import songList from 'base/song-list/song-list'
 import noResult from 'base/no-result/no-result'
 import Song from 'common/js/song'
 import {mapGetters,mapActions} from 'vuex'
+import {playlistMixin} from 'common/js/mixin'
 
 	
 export default{
+	mixins:[playlistMixin],
 	data(){
 		return{
 			switches:[{text: '我喜欢的'},{text: '最近听的'}],
@@ -49,7 +51,7 @@ export default{
 	computed:{
 		noResult(){
 			if(this.currentIndex === 0){
-//				return !this.favoriteList.length;
+				return !this.favouriteList.length;
 			}else{
 				return !this.playHistory.length;
 			}
@@ -62,10 +64,20 @@ export default{
 			}
 		},
 		...mapGetters([
-			'playHistory'
+			'playHistory',
+			'favouriteList'
 		])
 	},
 	methods:{
+		handlePlaylist(playlist){
+			let bottom = playlist.length>0? '60px':'';
+			this.$refs.listWrapper.style.bottom = bottom;
+			if(this.currentIndex===0){
+				this.$refs.favoritelist.refresh();
+			}else{
+				this.$refs.playhistory.refresh();
+			}
+		},
 		back(){
 			this.$router.back();
 		},
@@ -76,10 +88,20 @@ export default{
 			this.currentIndex = index;
 		},
 		random(){
-			
+			let list = this.currentIndex===0? this.favouriteList: list = this.playHistory
+			if(list.length===0){
+				return
+			}
+			list.map((song)=>{
+				return new Song(song);
+			})
+			this.randomPlay({
+				list
+			})
 		},
 		...mapActions([
-			'inserSong'
+			'inserSong',
+			'randomPlay'
 		])
 	},
 	components:{

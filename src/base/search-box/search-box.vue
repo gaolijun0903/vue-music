@@ -52,14 +52,13 @@ export default{
 }
 .search-box .icon-search{
 	font-size: 24px;
-	color:#222;
+	color:#222;	
 }
 .search-box .box{
 	flex:1;
 	margin:0 5px;
 	font-size: 14px;
-	line-height: 18px;
-	/*border: 1px solid #ffcd32;*/
+	line-height: 26px;
 	background: #333;
 	color:#fff;
 }

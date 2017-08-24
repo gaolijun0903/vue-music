@@ -1,5 +1,5 @@
 <template>
-<div class="song-list">
+<div class="song-list" v-show="songs.length>0">
 	<ul>
 		<li class="item" v-for="(song,index) in songs" @click="selectSong(song,index)">
 			<div class="ranknum" v-show="rank">
@@ -67,7 +67,7 @@ export default{
 }
 .song-list .item .ranknum .text{
 	font-size: 18px;
-	color: #FFFFFF;
+	color: #ffcd32;
 }
 .song-list .item .ranknum .icon{
 	display: inline-block;

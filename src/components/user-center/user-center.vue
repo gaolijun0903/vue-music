@@ -82,7 +82,7 @@ export default{
 			this.$router.back();
 		},
 		selectSong(song){
-			this.inserSong(new Song(song));
+			this.insertSong(new Song(song));
 		},
 		switchItem(index){
 			this.currentIndex = index;
@@ -100,7 +100,7 @@ export default{
 			})
 		},
 		...mapActions([
-			'inserSong',
+			'insertSong',
 			'randomPlay'
 		])
 	},
